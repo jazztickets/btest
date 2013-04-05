@@ -1,0 +1,8 @@
+bin
+build
+*.dll
+codelite/debug
+codelite/release
+codelite/*.mk
+codelite/*.tags
+codelite/btest.workspace.*
