@@ -20,6 +20,9 @@ static btRigidBody *MeshBody = NULL;
 static btTriangleIndexVertexArray *TriangleIndexVertexArray = NULL;
 static btTriangleInfoMap *TriangleInfoMap = NULL;
 
+// Used for conditional breakpoints
+static bool HitOnce = false;
+
 static btScalar Vertices[] = {
 	2.000000, 0.000000, 2.000000,
 	-2.000000, 0.000000, 2.000000,
@@ -39,6 +42,7 @@ static bool CustomMaterialCallback(btManifoldPoint &ManifoldPoint, const btColli
 		
 	btScalar Before = ManifoldPoint.m_normalWorldOnB.getY();
 	if(USE_INTERNAL_EDGE_UTILITY) {
+		HitOnce = true;
 		btAdjustInternalEdgeContacts(ManifoldPoint, Object1, Object0, PartID1, Index1);
 	}
 	btScalar After = ManifoldPoint.m_normalWorldOnB.getY();
@@ -57,6 +61,8 @@ int main(int ArgumentCount, char **Arguments) {
 	Solver = new btSequentialImpulseConstraintSolver();
 	World = new btDiscreteDynamicsWorld(Dispatcher, BroadPhase, Solver, CollisionConfiguration);
 	World->setGravity(btVector3(0.0, -9.81, 0.0));
+	//btContactSolverInfo &SolverInfo = World->getSolverInfo();
+	//SolverInfo.m_splitImpulseTurnErp = 0.0f;
 	
 	gContactAddedCallback = CustomMaterialCallback;
 	
