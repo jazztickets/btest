@@ -6,7 +6,7 @@
       <Project Name="btest" ConfigName="Debug"/>
       <Project Name="btest" ConfigName="Debug"/>
     </WorkspaceConfiguration>
-    <WorkspaceConfiguration Name="Release" Selected="no">
+    <WorkspaceConfiguration Name="Release" Selected="yes">
       <Project Name="btest" ConfigName="Release"/>
       <Project Name="btest" ConfigName="Release"/>
     </WorkspaceConfiguration>

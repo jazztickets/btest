@@ -26,6 +26,12 @@ elseif(UNIX)
 	set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE})
 endif()
 
+include_directories("bullet")
+set(BULLET_PHYSICS_SOURCE_DIR ${PROJECT_SOURCE_DIR}/bullet)
+set(BULLET_VERSION 2.81)
+add_definitions("-DBT_NO_PROFILE")
+subdirs("bullet")
+
 # external libraries
 #find_package(Threads REQUIRED)
 
@@ -46,4 +52,4 @@ source_group(main FILES ${SRC_MAIN})
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_ALL})
 
 # link libraries
-target_link_libraries(${CMAKE_PROJECT_NAME})
+target_link_libraries(${CMAKE_PROJECT_NAME} BulletDynamics BulletCollision LinearMath)
