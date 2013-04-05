@@ -30,6 +30,7 @@ include_directories("bullet")
 set(BULLET_PHYSICS_SOURCE_DIR ${PROJECT_SOURCE_DIR}/bullet)
 set(BULLET_VERSION 2.81)
 add_definitions("-DBT_NO_PROFILE")
+#add_definitions("-DBT_USE_DOUBLE_PRECISION")
 subdirs("bullet")
 
 # external libraries
