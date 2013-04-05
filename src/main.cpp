@@ -4,6 +4,11 @@
 #include <BulletCollision/CollisionShapes/btTriangleMeshShape.h>
 #include <cstdio>
 
+// culprit: Solver->m_tmpSolverBodyPool.m_data[1].m_deltaLinearVelocity.m_floats[0]
+// set at btSequentialImpulseConstraintSolver.cpp:1374
+
+// similar issue: http://www.bulletphysics.org/Bullet/phpBB3/viewtopic.php?f=9&t=8113&hilit=internal
+
 const bool USE_INTERNAL_EDGE_UTILITY = true;
 const bool USE_STATIC_BOX = false;
 const btScalar TIMESTEP = 1.0 / 100.0;
