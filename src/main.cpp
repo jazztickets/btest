@@ -61,8 +61,10 @@ int main(int ArgumentCount, char **Arguments) {
 	Solver = new btSequentialImpulseConstraintSolver();
 	World = new btDiscreteDynamicsWorld(Dispatcher, BroadPhase, Solver, CollisionConfiguration);
 	World->setGravity(btVector3(0.0, -9.81, 0.0));
-	//btContactSolverInfo &SolverInfo = World->getSolverInfo();
+	btContactSolverInfo &SolverInfo = World->getSolverInfo();
 	//SolverInfo.m_splitImpulseTurnErp = 0.0f;
+	//SolverInfo.m_splitImpulse = 1;
+	//SolverInfo.m_splitImpulsePenetrationThreshold = -0.02f;
 	
 	gContactAddedCallback = CustomMaterialCallback;
 	

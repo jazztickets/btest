@@ -3,6 +3,17 @@ cmake_minimum_required(VERSION 2.8)
 # project name
 project(btest)
 
+# for codelite clang integration
+if(DEFINED ENV{CXX})
+    message("-- Using CXX $ENV{CXX}")
+    set(CMAKE_CXX_COMPILER $ENV{CXX} )
+endif()
+
+if(DEFINED ENV{CC})
+    message("-- Using CC $ENV{CC}")
+    set(CMAKE_CC_COMPILER $ENV{CC} )
+endif()
+
 # add extra find modules
 #set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/;${CMAKE_MODULE_PATH}")
 
