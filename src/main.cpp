@@ -112,7 +112,7 @@ int main(int ArgumentCount, char **Arguments) {
 	}
 	
 	for(int i = 0; i < 100; i++) {
-		World->stepSimulation(TimeStep);
+		World->stepSimulation(TimeStep, 0, 0);
 	
 		const btTransform &Transform = SphereBody->getCenterOfMassTransform();
 		const btVector3 &Position = Transform.getOrigin();
