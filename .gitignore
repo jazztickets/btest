@@ -1,11 +1,3 @@
 bin
 build
-*.dll
-codelite/debug
-codelite/release
-codelite/*.mk
-codelite/*.tags
-codelite/btest.workspace.*
-codelite/compilation.db
-codelite/cscope*
-
+CMakeLists.txt.user
