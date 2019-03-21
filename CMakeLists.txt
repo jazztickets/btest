@@ -18,7 +18,7 @@ if(DEFINED ENV{CC})
 endif()
 
 # add extra find modules
-#set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/;${CMAKE_MODULE_PATH}")
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
 # windows only options
 if(MSVC)
@@ -27,7 +27,7 @@ if(MSVC)
 	# set output path
 	set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin/)
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
-elseif(UNIX)
+else()
 
 	# set default build type
 	if(NOT CMAKE_BUILD_TYPE)
