@@ -3,42 +3,15 @@
 #include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
 #include <BulletCollision/CollisionShapes/btTriangleMeshShape.h>
 #include <iostream>
-
-// culprit: Solver->m_tmpSolverBodyPool.m_data[1].m_deltaLinearVelocity.m_floats[0]
-// set at btSequentialImpulseConstraintSolver.cpp:1374
+#include <iomanip>
+#include <limits>
 
 // similar issue: http://www.bulletphysics.org/Bullet/phpBB3/viewtopic.php?f=9&t=8113&hilit=internal
 
-const bool USE_INTERNAL_EDGE_UTILITY = true;
-const bool USE_STATIC_BOX = false;
-const btScalar TIMESTEP = 1.0 / 100.0;
-
-static btDefaultCollisionConfiguration *CollisionConfiguration;
-static btCollisionDispatcher *Dispatcher;
-static btBroadphaseInterface *BroadPhase;
-static btSequentialImpulseConstraintSolver *Solver;
-static btDiscreteDynamicsWorld *World;
-
-static btRigidBody *SphereBody = NULL;
-static btRigidBody *BoxBody = NULL;
-static btRigidBody *MeshBody = NULL;
-static btTriangleIndexVertexArray *TriangleIndexVertexArray = NULL;
-static btTriangleInfoMap *TriangleInfoMap = NULL;
-
-// Used for conditional breakpoints
-static bool HitOnce = false;
-
-static btScalar Vertices[] = {
-	2.000000, 0.000000, 2.000000,
-	-2.000000, 0.000000, 2.000000,
-	2.000000, 0.000000, -2.000000,
-	-2.000000, 0.000000, -2.000000,
-};
-
-static int Indices[] = {
-	1, 0, 2,
-	3, 1, 2,
-};
+const float TIMESTEP = 1.0 / 100.0;
+const bool BULLET_USE_INTERNAL_EDGE_UTILITY = true;
+const bool BULLET_USE_STATIC_BOX = false;
+const bool BULLET_TEST_DETERMINISM = 1;
 
 static bool CustomMaterialCallback(btManifoldPoint &ManifoldPoint, const btCollisionObjectWrapper *Object0, int PartID0, int Index0, const btCollisionObjectWrapper *Object1, int PartID1, int Index1) {
 
@@ -46,8 +19,7 @@ static bool CustomMaterialCallback(btManifoldPoint &ManifoldPoint, const btColli
 		return false;
 
 	btScalar Before = ManifoldPoint.m_normalWorldOnB.getY();
-	if(USE_INTERNAL_EDGE_UTILITY) {
-		HitOnce = true;
+	if(BULLET_USE_INTERNAL_EDGE_UTILITY) {
 		btAdjustInternalEdgeContacts(ManifoldPoint, Object1, Object0, PartID1, Index1);
 	}
 
@@ -58,7 +30,30 @@ static bool CustomMaterialCallback(btManifoldPoint &ManifoldPoint, const btColli
 	return false;
 }
 
-int main(int ArgumentCount, char **Arguments) {
+static void TestBullet() {
+	btDefaultCollisionConfiguration *CollisionConfiguration;
+	btCollisionDispatcher *Dispatcher;
+	btBroadphaseInterface *BroadPhase;
+	btSequentialImpulseConstraintSolver *Solver;
+	btDiscreteDynamicsWorld *World;
+
+	btRigidBody *SphereBody = NULL;
+	btRigidBody *BoxBody = NULL;
+	btRigidBody *MeshBody = NULL;
+	btTriangleIndexVertexArray *TriangleIndexVertexArray = NULL;
+	btTriangleInfoMap *TriangleInfoMap = NULL;
+
+	static btScalar Vertices[] = {
+		200.000000, 0.000000, 200.000000,
+		-200.000000, 0.000000, 200.000000,
+		200.000000, 0.000000, -200.000000,
+		-200.000000, 0.000000, -200.000000,
+	};
+
+	static int Indices[] = {
+		1, 0, 2,
+		3, 1, 2,
+	};
 
 	// Set up physics modules
 	CollisionConfiguration = new btDefaultCollisionConfiguration();
@@ -69,12 +64,13 @@ int main(int ArgumentCount, char **Arguments) {
 	World = new btDiscreteDynamicsWorld(Dispatcher, BroadPhase, Solver, CollisionConfiguration);
 	World->setGravity(btVector3(0.0, -9.81, 0.0));
 	btContactSolverInfo &SolverInfo = World->getSolverInfo();
+	SolverInfo.m_timeStep = TIMESTEP;
+	//SolverInfo.m_solverMode = 0;
 	//SolverInfo.m_splitImpulseTurnErp = 0.0f;
 	//SolverInfo.m_splitImpulse = 1;
 	//SolverInfo.m_splitImpulsePenetrationThreshold = -0.02f;
 
 	gContactAddedCallback = CustomMaterialCallback;
-
 	{
 		btScalar Mass = 1.0;
 		btCollisionShape *Shape = new btSphereShape(0.5);
@@ -91,7 +87,7 @@ int main(int ArgumentCount, char **Arguments) {
 	}
 
 	// Set to 1 to test static box shape
-	if(USE_STATIC_BOX) {
+	if(BULLET_USE_STATIC_BOX) {
 
 		btScalar Mass = 0.0;
 		btCollisionShape *Shape = new btBoxShape(btVector3(1, 1, 1));
@@ -125,12 +121,30 @@ int main(int ArgumentCount, char **Arguments) {
 		World->addRigidBody(MeshBody);
 	}
 
-	for(int i = 0; i < 100; i++) {
-		World->stepSimulation(TIMESTEP, 0, 0);
+	if(BULLET_TEST_DETERMINISM) {
+		int Iterations = 10.0 / TIMESTEP + 1;
+		float Timer = 0;
+		for(int i = 0; i < Iterations; i++) {
+			Timer += TIMESTEP;
 
-		const btTransform &Transform = SphereBody->getCenterOfMassTransform();
-		const btVector3 &Position = Transform.getOrigin();
-		std::cout << Position.getX() << " " << Position.getY() << " " << Position.getZ() << std::endl;
+			SphereBody->applyTorque(btVector3(1, 0, 0));
+			if(i == (int)(3.0 / TIMESTEP + 1))
+				SphereBody->applyCentralImpulse(btVector3(0, 5, 0));
+			World->stepSimulation(TIMESTEP, 0, 0);
+
+			const btTransform &Transform = SphereBody->getCenterOfMassTransform();
+			const btVector3 &Position = Transform.getOrigin();
+			std::cout << std::setprecision(16) << "t=" << Timer << " " << Position[0] << " " << Position[1] << " " << Position[2] << std::endl;
+		}
+	}
+	else {
+		float Position[3] = { 1.00001, 1.00002, 1.00003 };
+		for(int i = 0; i < 1000; i++) {
+			Position[0] *= Position[1];
+			Position[1] /= sqrtf(powf(Position[2], 2));
+			Position[2] += 0.00001 + Position[0];
+		}
+		std::cout << std::setprecision(16) << Position[2] << std::endl;
 	}
 
 	World->removeRigidBody(SphereBody);
@@ -159,6 +173,11 @@ int main(int ArgumentCount, char **Arguments) {
 	delete Dispatcher;
 	delete BroadPhase;
 	delete CollisionConfiguration;
+}
+
+int main(int ArgumentCount, char **Arguments) {
+
+	TestBullet();
 
 	return 0;
 }

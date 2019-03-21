@@ -34,6 +34,9 @@ else()
 		set(CMAKE_BUILD_TYPE Release)
 	endif()
 
+	# compiler flags
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -msse -mfpmath=sse")
+
 	# set output path
 	set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE})
 endif()
