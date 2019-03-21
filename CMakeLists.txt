@@ -40,10 +40,10 @@ endif()
 
 set(BULLET_PHYSICS_SOURCE_DIR ${PROJECT_SOURCE_DIR}/bullet)
 set(BULLET_VERSION 2.88)
-subdirs("bullet")
+subdirs("ext/bullet")
 
 # set include directories
-include_directories("bullet")
+include_directories("ext/bullet")
 include_directories("src")
 
 # add source files
