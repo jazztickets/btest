@@ -49,7 +49,6 @@ include_directories("ext")
 include_directories("ext/ode/src")
 include_directories("ext/libccd")
 include_directories("ext/libccd/custom")
-include_directories("ext/ou/include")
 include_directories("src")
 
 # add source files
