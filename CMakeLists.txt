@@ -41,17 +41,24 @@ else()
 	set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE})
 endif()
 
-set(BULLET_PHYSICS_SOURCE_DIR ${PROJECT_SOURCE_DIR}/bullet)
-set(BULLET_VERSION 2.88)
-subdirs("ext/bullet")
+find_package(Threads REQUIRED)
 
 # set include directories
 include_directories("ext/bullet")
+include_directories("ext")
+include_directories("ext/ode/src")
+include_directories("ext/libccd")
+include_directories("ext/libccd/custom")
+include_directories("ext/ou/include")
 include_directories("src")
 
 # add source files
+file(GLOB_RECURSE SRC_EXT ext/*.c ext/*.cpp ext/*.h)
 file(GLOB SRC_MAIN src/*.cpp src/*.h)
-file(GLOB SRC_ALL ${SRC_MAIN})
+file(GLOB SRC_ALL
+	${SRC_MAIN}
+	${SRC_EXT}
+)
 
 # add virtual folders
 source_group(main FILES ${SRC_MAIN})
@@ -60,4 +67,6 @@ source_group(main FILES ${SRC_MAIN})
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_ALL})
 
 # link libraries
-target_link_libraries(${CMAKE_PROJECT_NAME} BulletDynamics BulletCollision LinearMath)
+target_link_libraries(${CMAKE_PROJECT_NAME}
+	${CMAKE_THREAD_LIBS_INIT}
+)

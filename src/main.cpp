@@ -2,6 +2,7 @@
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
 #include <BulletCollision/CollisionShapes/btTriangleMeshShape.h>
+#include <ode/ode.h>
 #include <iostream>
 #include <iomanip>
 #include <limits>
@@ -12,6 +13,67 @@ const float TIMESTEP = 1.0 / 100.0;
 const bool BULLET_USE_INTERNAL_EDGE_UTILITY = true;
 const bool BULLET_USE_STATIC_BOX = false;
 const bool BULLET_TEST_DETERMINISM = 1;
+
+static dWorldID World;
+static dJointGroupID ContactGroup;
+
+static void ODECallback(void *Data, dGeomID Object1, dGeomID Object2) {
+	dBodyID Body1 = dGeomGetBody(Object1);
+	dBodyID Body2 = dGeomGetBody(Object2);
+
+	dContact Contact;
+	Contact.surface.mode = dContactBounce | dContactSoftCFM;
+	Contact.surface.mu = dInfinity;
+	Contact.surface.bounce = 0.9;
+	Contact.surface.bounce_vel = 0.1;
+	Contact.surface.soft_cfm = 0.001;
+	if(int Count = dCollide(Object1, Object2, 1, &Contact.geom,sizeof(dContact))) {
+		dJointID Joint = dJointCreateContact(World, ContactGroup, &Contact);
+		dJointAttach(Joint, Body1, Body2);
+	}
+}
+
+static void TestODE() {
+	dInitODE();
+
+	// Create world
+	World = dWorldCreate();
+	dSpaceID Space = dHashSpaceCreate(0);
+	dWorldSetGravity(World, 0, -9.8, 0);
+	dWorldSetCFM(World, 1e-5);
+	dCreatePlane(Space, 0, 1, 0, 0);
+	ContactGroup = dJointGroupCreate(0);
+
+	// Create object
+	dBodyID Body = dBodyCreate(World);
+	dGeomID Geometry = dCreateSphere(Space, 0.5);
+	dMass Mass;
+
+	dMassSetSphere(&Mass, 1, 1.0);
+	dBodySetMass(Body, &Mass);
+	dGeomSetBody(Geometry, Body);
+
+	// Set initial position
+	dBodySetPosition(Body, 0.71, 2.5, -0.8);
+
+	// Run simulation
+	float Timer = 0;
+	for(int i = 0; i < 200; i++) {
+		Timer += TIMESTEP;
+		dSpaceCollide(Space, 0, &ODECallback);
+		dWorldQuickStep(World, TIMESTEP);
+		dJointGroupEmpty(ContactGroup);
+
+		const dReal *Position = dBodyGetPosition(Body);
+		std::cout << std::setprecision(16) << "t=" << Timer << " " << Position[0] << " " << Position[1] << " " << Position[2] << std::endl;
+	}
+
+	// Clean up
+	dJointGroupDestroy(ContactGroup);
+	dSpaceDestroy(Space);
+	dWorldDestroy(World);
+	dCloseODE();
+}
 
 static bool CustomMaterialCallback(btManifoldPoint &ManifoldPoint, const btCollisionObjectWrapper *Object0, int PartID0, int Index0, const btCollisionObjectWrapper *Object1, int PartID1, int Index1) {
 
@@ -177,7 +239,8 @@ static void TestBullet() {
 
 int main(int ArgumentCount, char **Arguments) {
 
-	TestBullet();
+	//TestBullet();
+	TestODE();
 
 	return 0;
 }
