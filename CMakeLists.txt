@@ -2,20 +2,17 @@ cmake_minimum_required(VERSION 2.8)
 
 add_definitions("-DBT_NO_PROFILE")
 #add_definitions("-DBT_USE_DOUBLE_PRECISION")
+#add_definitions(-DdIDESINGLE)
+#add_definitions(-DCCD_IDESINGLE)
+add_definitions(-DdIDEDOUBLE)
+add_definitions(-DCCD_IDEDOUBLE)
+add_definitions(-DdTRIMESH_ENABLED)
+add_definitions(-DdTRIMESH_OPCODE)
+add_definitions(-DdLIBCCD_ENABLED)
+add_definitions(-DdLIBCCD_CYL_CYL)
 
 # project name
 project(btest)
-
-# for codelite clang integration
-if(DEFINED ENV{CXX})
-    message("-- Using CXX $ENV{CXX}")
-    set(CMAKE_CXX_COMPILER $ENV{CXX} )
-endif()
-
-if(DEFINED ENV{CC})
-    message("-- Using CC $ENV{CC}")
-    set(CMAKE_CC_COMPILER $ENV{CC} )
-endif()
 
 # add extra find modules
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
@@ -49,6 +46,7 @@ include_directories("ext")
 include_directories("ext/ode/src")
 include_directories("ext/libccd")
 include_directories("ext/libccd/custom")
+include_directories("ext/OPCODE")
 include_directories("src")
 
 # add source files

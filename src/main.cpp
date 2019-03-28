@@ -9,7 +9,7 @@
 
 // similar issue: http://www.bulletphysics.org/Bullet/phpBB3/viewtopic.php?f=9&t=8113&hilit=internal
 
-const float TIMESTEP = 1.0 / 100.0;
+const double TIMESTEP = 1.0 / 100.0;
 const bool BULLET_USE_INTERNAL_EDGE_UTILITY = true;
 const bool BULLET_USE_STATIC_BOX = false;
 const bool BULLET_TEST_DETERMINISM = 1;
@@ -17,18 +17,18 @@ const bool BULLET_TEST_DETERMINISM = 1;
 static dWorldID World;
 static dJointGroupID ContactGroup;
 
-static void ODECallback(void *Data, dGeomID Object1, dGeomID Object2) {
-	dBodyID Body1 = dGeomGetBody(Object1);
-	dBodyID Body2 = dGeomGetBody(Object2);
+static void ODECallback(void *Data, dGeomID Geometry1, dGeomID Geometry2) {
+	dBodyID Body1 = dGeomGetBody(Geometry1);
+	dBodyID Body2 = dGeomGetBody(Geometry2);
 
-	dContact Contact;
-	Contact.surface.mode = dContactBounce | dContactSoftCFM;
-	Contact.surface.mu = dInfinity;
-	Contact.surface.bounce = 0.9;
-	Contact.surface.bounce_vel = 0.1;
-	Contact.surface.soft_cfm = 0.001;
-	if(int Count = dCollide(Object1, Object2, 1, &Contact.geom,sizeof(dContact))) {
-		dJointID Joint = dJointCreateContact(World, ContactGroup, &Contact);
+	const int MAX_CONTACTS = 32;
+	dContact Contacts[MAX_CONTACTS];
+	int Count = dCollide(Geometry1, Geometry2, MAX_CONTACTS, &Contacts[0].geom, sizeof(dContact));
+	for(int i = 0; i < Count; i++) {
+		Contacts[i].surface.mode = dContactApprox1;
+		Contacts[i].surface.mu = 1;
+
+		dJointID Joint = dJointCreateContact(World, ContactGroup, &Contacts[i]);
 		dJointAttach(Joint, Body1, Body2);
 	}
 }
@@ -39,32 +39,54 @@ static void TestODE() {
 	// Create world
 	World = dWorldCreate();
 	dSpaceID Space = dHashSpaceCreate(0);
-	dWorldSetGravity(World, 0, -9.8, 0);
-	dWorldSetCFM(World, 1e-5);
+	dWorldSetGravity(World, 0, -9.81, 0);
+	dWorldSetCFM(World, 0);
+	dWorldSetERP(World, 0.0);
 	dCreatePlane(Space, 0, 1, 0, 0);
 	ContactGroup = dJointGroupCreate(0);
 
-	// Create object
-	dBodyID Body = dBodyCreate(World);
-	dGeomID Geometry = dCreateSphere(Space, 0.5);
-	dMass Mass;
+	// Create objects
+	dBodyID SphereBody;
+	{
+		SphereBody = dBodyCreate(World);
+		dGeomID Geometry = dCreateSphere(Space, 0.5);
+		dMass Mass;
 
-	dMassSetSphere(&Mass, 1, 1.0);
-	dBodySetMass(Body, &Mass);
-	dGeomSetBody(Geometry, Body);
+		// Set mass
+		dMassSetSphereTotal(&Mass, 1.0, 0.5);
+		dBodySetMass(SphereBody, &Mass);
+		dGeomSetBody(Geometry, SphereBody);
 
-	// Set initial position
-	dBodySetPosition(Body, 0.71, 2.5, -0.8);
+		// Set initial position
+		dBodySetPosition(SphereBody, 0.0, 2.5, 0);
+	}
+
+	dBodyID BoxBody;
+	{
+		BoxBody = dBodyCreate(World);
+		dGeomID Geometry = dCreateBox(Space, 1, 1, 1);
+		dMass Mass;
+
+		// Set mass
+		dMassSetBoxTotal(&Mass, 1.0, 1, 1, 1);
+		dBodySetMass(BoxBody, &Mass);
+		dGeomSetBody(Geometry, BoxBody);
+
+		// Set initial position
+		dBodySetPosition(BoxBody, 0.9, 0.5, 0);
+	}
 
 	// Run simulation
-	float Timer = 0;
-	for(int i = 0; i < 200; i++) {
+	double Timer = 0;
+	int Steps = 1 / TIMESTEP;
+	for(int i = 0; i < Steps; i++) {
 		Timer += TIMESTEP;
 		dSpaceCollide(Space, 0, &ODECallback);
 		dWorldQuickStep(World, TIMESTEP);
 		dJointGroupEmpty(ContactGroup);
 
-		const dReal *Position = dBodyGetPosition(Body);
+		const dReal *Position = dBodyGetPosition(SphereBody);
+		//const dReal *Position = dBodyGetPosition(BoxBody);
 		std::cout << std::setprecision(16) << "t=" << Timer << " " << Position[0] << " " << Position[1] << " " << Position[2] << std::endl;
 	}
 
@@ -199,15 +221,6 @@ static void TestBullet() {
 			std::cout << std::setprecision(16) << "t=" << Timer << " " << Position[0] << " " << Position[1] << " " << Position[2] << std::endl;
 		}
 	}
-	else {
-		float Position[3] = { 1.00001, 1.00002, 1.00003 };
-		for(int i = 0; i < 1000; i++) {
-			Position[0] *= Position[1];
-			Position[1] /= sqrtf(powf(Position[2], 2));
-			Position[2] += 0.00001 + Position[0];
-		}
-		std::cout << std::setprecision(16) << Position[2] << std::endl;
-	}
 
 	World->removeRigidBody(SphereBody);
 	if(MeshBody)
@@ -237,10 +250,23 @@ static void TestBullet() {
 	delete CollisionConfiguration;
 }
 
+static void TestCalculations() {
+	double Position[3] = { 1.00001, 1.00002, 1.00003 };
+	for(int i = 0; i < 1000; i++) {
+		Position[0] *= Position[1];
+		Position[1] /= sqrt(pow(Position[2], 2));
+		Position[2] += 0.00001 + Position[0];
+	}
+
+	std::cout << "TestCalculations" << std::endl;
+	std::cout << std::setprecision(16) << Position[2] << std::endl;
+}
+
 int main(int ArgumentCount, char **Arguments) {
 
 	//TestBullet();
 	TestODE();
+	TestCalculations();
 
 	return 0;
 }
